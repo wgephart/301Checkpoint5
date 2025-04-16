@@ -25,7 +25,7 @@ _syscallStart_:
 
 #Do init stuff
 _syscall0:
-    # Initialization goes here
+    addi $sp, $0, -4096 # initialize stack pointer
     j _syscallEnd_
 
 #Print Integer
@@ -49,12 +49,21 @@ _syscall10:
 
 #print character
 _syscall11:
-    # print character code goes here
+    addi $t0, $0, -256
+    sw $a0, 0($t0)
     jr $k0
 
 #read character
 _syscall12:
-    # read character code goes here
+    # load addresses
+    addi $t0, $0, -236 
+    addi $t1, $0, -240 
+    # loop until a character is available
+_pollingLoop:
+    lw $t2, 0($t0) # lw from keyboard status register
+    beq $t2, $0, _pollingLoop  # if status is 0 then no character is available - loop again
+    # when character is available read it
+    lw $v0, 0($t1) # lw from keyboard data register
     jr $k0
 
 #extra challenge syscalls go here?
