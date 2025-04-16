@@ -40,7 +40,9 @@ _syscall5:
 
 #Heap allocation
 _syscall9:
-    # Heap allocation code goes here
+    la $k1, _END_OF_STATIC_MEMORY_ # Load end of static memory
+    lui $t0, -3800  # HEAP POINTER 0x3FFFF128
+    sw $k1, 0($t0) # Store initial heap pointer
     jr $k0
 
 #"End" the program
