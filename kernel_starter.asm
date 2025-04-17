@@ -26,6 +26,9 @@ _syscallStart_:
 #Do init stuff
 _syscall0:
     addi $sp, $0, -4096 # initialize stack pointer
+    la $k1, _END_OF_STATIC_MEMORY_ # Load end of static memory
+    addi $t0, $0, -4092  # HEAP POINTER 0x3FFFF004
+    sw $k1, 0($t0) # Store initial heap pointer
     j _syscallEnd_
 
 #Print Integer
@@ -40,10 +43,11 @@ _syscall5:
 
 #Heap allocation
 _syscall9:
-    la $k1, _END_OF_STATIC_MEMORY_ # Load end of static memory
-    lui $t0, -3800  # HEAP POINTER 0x3FFFF128
-    sw $k1, 0($t0) # Store initial heap pointer
-    jr $k0
+    addi $t0, $0, -4092 # add heap pointer address into $t0
+    lw $v0, 0($t0) # load heap pointer into $v0
+    addi $t1, $v0, $a0 # allocate new space on heap
+    sw $t1, 0($t0) # store updated heap pointer
+    jr $k0 
 
 #"End" the program
 _syscall10:
