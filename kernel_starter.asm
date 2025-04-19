@@ -33,12 +33,69 @@ _syscall0:
 
 #Print Integer
 _syscall1:
-    # Print Integer code goes here
+    add $t0, $a0, $0        # copy integer to $t0
+    beq $t0, $0, print_zero # special case
+    slt $t1, $t0, $0        # $t2 = 1 if integer is negative
+    bne $t1, $0, negative   # branch if integer is negative
+
+convert:
+    addi $sp, $sp, -40  # make space for 10 "words" (digits)
+    add $t5, $sp, $0    # $t5 = base pointer
+    add $t6, $0, $0     # $t6 = dig count
+
+get_digit:
+    beq $t0, $0, store_last_digit # if quotient is zero, break loop (one more digit)
+
+    addi $t7, $0, 10
+    div $t0, $t7        # LO = quotient, HI = remainder
+    mfhi $t8            # $t8 = remainder (which is digit 0-9)
+    mflo $t0            # $t0 = new quotient
+    
+    # store ascii digit
+    addi $t8, $t8, '0'
+    sw $t8, 0($t5)
+    addi $t5, $t5, 4 # increment base pointer
+    addi $t6, $t6, 1 # increment dig count
+    j get_digit
+
+store_last_digit:
+    # store final most-significant digit
+    addi $t8, $t0, '0'
+    sw $t8, 0($t5)
+    addi $t5, $t5, 4
+    addi $t6, $t6, 1
+
+print_digits:
+    # print char versions of digits from back of allocated 10 digit space
+    beq $t6, $0, done_print
+    addi $t5, $t5, -4 # decrement pointer to next digit
+    lw $t8, 0($t5) # read digit
+    addi $t3, $0, -256
+    sw $t8, 0($t3)
+    addi $t6, $t6, -1 # decrement digit count
+    j print_digits
+
+done_print:
+    # restore stack and return
+    addi $sp, $sp, 40
+    jr $k0
+
+negative:
+    addi $t4, $0, '-'
+    addi $t3, $0, -256
+    sw $t4, 0($t3)
+    sub $t0, $0, $t0     # negate integer
+    j convert
+
+print_zero:
+    addi $t2, $0, '0'
+    addi $t3, $0, -256
+    sw $t2, 0($t3)
     jr $k0
 
 #Read Integer
 _syscall5:
-    # Read Integer code goes here
+    
     jr $k0
 
 #Heap allocation
