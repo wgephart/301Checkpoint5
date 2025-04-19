@@ -33,18 +33,18 @@ _syscall0:
 
 #Print Integer
 _syscall1:
-    add $t0, $a0, $0        # copy integer to $t0
-    beq $t0, $0, print_zero # special case
-    slt $t1, $t0, $0        # $t2 = 1 if integer is negative
-    bne $t1, $0, negative   # branch if integer is negative
+    add $t0, $a0, $0            # copy integer to $t0
+    beq $t0, $0, _print_zero    # special case
+    slt $t1, $t0, $0            # $t2 = 1 if integer is negative
+    bne $t1, $0, _negative      # branch if integer is negative
 
-convert:
+_convert:
     addi $sp, $sp, -40  # make space for 10 "words" (digits)
     add $t5, $sp, $0    # $t5 = base pointer
     add $t6, $0, $0     # $t6 = dig count
 
-get_digit:
-    beq $t0, $0, store_last_digit # if quotient is zero, break loop (one more digit)
+_get_digit:
+    beq $t0, $0, _store_last_digit  # if quotient is zero, break loop (one more digit)
 
     addi $t7, $0, 10
     div $t0, $t7        # LO = quotient, HI = remainder
@@ -56,38 +56,38 @@ get_digit:
     sw $t8, 0($t5)
     addi $t5, $t5, 4 # increment base pointer
     addi $t6, $t6, 1 # increment dig count
-    j get_digit
+    j _get_digit
 
-store_last_digit:
+_store_last_digit:
     # store final most-significant digit
     addi $t8, $t0, '0'
     sw $t8, 0($t5)
     addi $t5, $t5, 4
     addi $t6, $t6, 1
 
-print_digits:
+_print_digits:
     # print char versions of digits from back of allocated 10 digit space
-    beq $t6, $0, done_print
-    addi $t5, $t5, -4 # decrement pointer to next digit
-    lw $t8, 0($t5) # read digit
+    beq $t6, $0, _done_print
+    addi $t5, $t5, -4   # decrement pointer to next digit
+    lw $t8, 0($t5)      # read digit
     addi $t3, $0, -256
     sw $t8, 0($t3)
-    addi $t6, $t6, -1 # decrement digit count
-    j print_digits
+    addi $t6, $t6, -1   # decrement digit count
+    j _print_digits
 
-done_print:
+_done_print:
     # restore stack and return
     addi $sp, $sp, 40
     jr $k0
 
-negative:
+_negative:
     addi $t4, $0, '-'
     addi $t3, $0, -256
     sw $t4, 0($t3)
-    sub $t0, $0, $t0     # negate integer
-    j convert
+    sub $t0, $0, $t0    # negate integer
+    j _convert
 
-print_zero:
+_print_zero:
     addi $t2, $0, '0'
     addi $t3, $0, -256
     sw $t2, 0($t3)
@@ -95,7 +95,7 @@ print_zero:
 
 #Read Integer
 _syscall5:
-    
+
     jr $k0
 
 #Heap allocation
