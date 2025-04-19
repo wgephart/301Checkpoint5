@@ -95,6 +95,24 @@ _print_zero:
 
 #Read Integer
 _syscall5:
+    add $v0, $0, $0 # initialize $v0
+    addi $t1, $0, 1 # $t1 = sign (+1)
+
+_read_loop:
+    addi $t2, $0, -236
+_poll:
+    lw $t3, 0($t2) # t3 = load status
+    beq $t3, $0, _read_poll # if $t3 == 0 (no key), loop back
+    addi $t2, $0, -240
+    lw $t5, 0($t2) # read one ascii char into $t5
+
+
+
+
+
+
+
+
 
     jr $k0
 
