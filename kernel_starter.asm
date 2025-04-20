@@ -171,8 +171,8 @@ _syscall11:
 #read character
 _syscall12:
     # load addresses
-    addi $t0, $0, -236 
-    addi $t1, $0, -240 
+    addi $t0, $0, -240 
+    addi $t1, $0, -236
     # loop until a character is available
 _pollingLoop:
     lw $t2, 0($t0) # lw from keyboard status register
