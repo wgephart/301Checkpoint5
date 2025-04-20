@@ -95,25 +95,59 @@ _print_zero:
 
 #Read Integer
 _syscall5:
-    add $v0, $0, $0 # initialize $v0
-    addi $t1, $0, 1 # $t1 = sign (+1)
+    add $v0, $0, $0     # initialize $v0
+    addi $t1, $0, 1     # $t1 = sign (+1)
 
 _read_loop:
-    addi $t2, $0, -236
+    addi $t2, $0, -236  # status address
 _poll:
-    lw $t3, 0($t2) # t3 = load status
-    beq $t3, $0, _read_poll # if $t3 == 0 (no key), loop back
+    lw $t3, 0($t2)      # t3 = load status
+    beq $t3, $0, _poll  # if $t3 == 0 (no key), loop back
     addi $t2, $0, -240
-    lw $t5, 0($t2) # read one ascii char into $t5
+    lw $t5, 0($t2)      # read one ascii char into $t5
 
+    # check newline
+    addi $t3, $0, 10    # newline char    
+    beq $t5, $t3, _end  # if $t3 char is newline, exit loop
 
+    # check negative
+    addi $t3, $0, '-'
+    beq $t5, $t3, _minus
 
+    # skip non-digits
+    addi $t3, $0, '0'
+    slt $t4, $t5, $t3           # $t4 = 1 if char < '0'
+    bne $t4, $0, _read_loop     # loop if char is non-digit (< '0')
+    addi $t3, $0, '9'   
+    slt $t4, $t3, $t5           # $t4 = 1 if char > '9'
+    bne $t4, $0, _read_loop     # loop if char is non-digit (> '9')
 
+    # process digits
+    addi $t5, $t5, -48          # subtract 48 from ascii value ('0' -> '9' == 48 -> 57 ascii)
+    add $t7, $v0, $0            # $t7 = old $v0
+    sll $v0, $v0, 3             # $v0 = old x 8
+    sll $t8, $t7, 1             # $t8 = old x 2
+    add $v0, $v0, $t8           # $v0 = old x 10
+    add $v0, $v0, $t5           # $v0 = old x 10 + digit
+    j _read_loop                # read next char
 
+    # process negatives
+_minus:
+    beq $v0, $0, _set_negative
+    j _read_loop
 
+_set_negative:
+    addi $t1, $0, -1            # $t1 = sign (-1)
+    j _read_loop
 
+    # end of input
+_end:
+    addi $t3, $0, -1
+    beq $t1, $t3, _negative_result      # if sign == -1 then negate
+    jr $k0
 
-
+_negative_result:
+    sub $v0, $0, $v0            # $v0 = -$v0
     jr $k0
 
 #Heap allocation
