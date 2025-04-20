@@ -52,7 +52,7 @@ _get_digit:
     mflo $t0            # $t0 = new quotient
     
     # store ascii digit
-    addi $t8, $t8, '0'
+    addi $t8, $t8, 48
     sw $t8, 0($t5)
     addi $t5, $t5, 4 # increment base pointer
     addi $t6, $t6, 1 # increment dig count
@@ -60,7 +60,7 @@ _get_digit:
 
 _store_last_digit:
     # store final most-significant digit
-    addi $t8, $t0, '0'
+    addi $t8, $t0, 48
     sw $t8, 0($t5)
     addi $t5, $t5, 4
     addi $t6, $t6, 1
@@ -81,14 +81,14 @@ _done_print:
     jr $k0
 
 _negative:
-    addi $t4, $0, '-'
+    addi $t4, $0, 45
     addi $t3, $0, -256
     sw $t4, 0($t3)
     sub $t0, $0, $t0    # negate integer
     j _convert
 
 _print_zero:
-    addi $t2, $0, '0'
+    addi $t2, $0, 48
     addi $t3, $0, -256
     sw $t2, 0($t3)
     jr $k0
@@ -111,14 +111,14 @@ _poll:
     beq $t5, $t3, _end  # if $t3 char is newline, exit loop
 
     # check negative
-    addi $t3, $0, '-'
+    addi $t3, $0, 45
     beq $t5, $t3, _minus
 
     # skip non-digits
-    addi $t3, $0, '0'
+    addi $t3, $0, 48
     slt $t4, $t5, $t3           # $t4 = 1 if char < '0'
     bne $t4, $0, _read_loop     # loop if char is non-digit (< '0')
-    addi $t3, $0, '9'   
+    addi $t3, $0, 57   
     slt $t4, $t3, $t5           # $t4 = 1 if char > '9'
     bne $t4, $0, _read_loop     # loop if char is non-digit (> '9')
 
@@ -154,7 +154,7 @@ _negative_result:
 _syscall9:
     addi $t0, $0, -4092 # add heap pointer address into $t0
     lw $v0, 0($t0) # load heap pointer into $v0
-    addi $t1, $v0, $a0 # allocate new space on heap
+    add $t1, $v0, $a0 # allocate new space on heap
     sw $t1, 0($t0) # store updated heap pointer
     jr $k0 
 
