@@ -33,104 +33,121 @@ _syscall0:
 
 #Print Integer
 _syscall1:
-    addi $sp, $sp, -8 # allocate space on stack for 2 registers
-    sw $t0, 0($sp) # save t0 on the stack
-    sw $t1, 4($sp) # save t1 on the stack
+    add $t0, $a0, $0            # copy integer to $t0
+    beq $t0, $0, _print_zero    # special case
+    slt $t1, $t0, $0            # $t2 = 1 if integer is negative
+    bne $t1, $0, _negative      # branch if integer is negative
 
-    addi $t1, $0, 0 #t1 = 0
-    bne $a0, $0, _not_zero # if a0 is not zero
-    addi $t0, $0, 48 # t0 = ascii 0
-    sw $t0, -256($0) # print 0
-    j _end_print_int
+_convert:
+    addi $sp, $sp, -40  # make space for 10 "words" (digits)
+    add $t5, $sp, $0    # $t5 = base pointer
+    add $t6, $0, $0     # $t6 = dig count
 
-_not_zero:
-    slt $t0, $a0, $0 # t0 = 1 if a0<0 negative
-    beq $t0, $0, _main_print_int_loop # if t0=0, not negative, go to main loop
-    addi $t0, $0, 45 # ASCII for -
-    sw $t0, -256($0) # print - to terminal
-    addi $t0, $0, -1 #make t0 negative
-    mult $a0, $t0 #make a0 positve
-    mflo $a0
+_get_digit:
+    beq $t0, $0, _store_last_digit  # if quotient is zero, break loop (one more digit)
 
-_main_print_int_loop:
-    addi $t0, $0, 10
-    div $a0, $t0
-    mflo $a0
-    mfhi $t0 # remainder, rightmost in t0
-    beq $a0, $0, _actual_print
-    addi $t1, $t1, 1 # increment digit counter
-    addi $sp, $sp, -4 # allocate space for 1 int
-    sw $t0, 0($sp) # save it on stack
-    j _main_print_int_loop
+    addi $t7, $0, 10
+    div $t0, $t7        # LO = quotient, HI = remainder
+    mfhi $t8            # $t8 = remainder (which is digit 0-9)
+    mflo $t0            # $t0 = new quotient
+    
+    # store ascii digit
+    addi $t8, $t8, 48
+    sw $t8, 0($t5)
+    addi $t5, $t5, 4 # increment base pointer
+    addi $t6, $t6, 1 # increment dig count
+    j _get_digit
 
-_actual_print:
-    addi $t0, $t0, 48 # ASCII
-    sw $t0, -256($0) #print to terminal
-    beq $t1, $0, _end_print_int
-    lw $t0, 0($sp) #get next digit from stack
-    addi $sp, $sp, 4 # deallocate
-    addi $t1, $t1, -1
-    j _actual_print
+_store_last_digit:
+    # store final most-significant digit
+    addi $t8, $t0, 48
+    sw $t8, 0($t5)
+    addi $t5, $t5, 4
+    addi $t6, $t6, 1
 
-_end_print_int:
-    lw $t0, 0($sp) # get t0 back from mem
-    lw $t1, 4($sp) # save t0 on the stack
-    addi $sp, $sp, 8 # deallocate stack
+_print_digits:
+    # print char versions of digits from back of allocated 10 digit space
+    beq $t6, $0, _done_print
+    addi $t5, $t5, -4   # decrement pointer to next digit
+    lw $t8, 0($t5)      # read digit
+    addi $t3, $0, -256
+    sw $t8, 0($t3)
+    addi $t6, $t6, -1   # decrement digit count
+    j _print_digits
+
+_done_print:
+    # restore stack and return
+    addi $sp, $sp, 40
+    jr $k0
+
+_negative:
+    addi $t4, $0, 45
+    addi $t3, $0, -256
+    sw $t4, 0($t3)
+    sub $t0, $0, $t0    # negate integer
+    j _convert
+
+_print_zero:
+    addi $t2, $0, 48
+    addi $t3, $0, -256
+    sw $t2, 0($t3)
     jr $k0
 
 #Read Integer
 _syscall5:
-    addi $sp, $sp, -16 # allocate space on stack for 4 registers
-    sw $t0, 0($sp) # save t0 on the stack
-    sw $t1, 4($sp) # save t1 on the stack
-    sw $t2, 8($sp) # save t2 on the stack
-    sw $t3, 12($sp) # save t3 on the stack
+    add $v0, $0, $0     # initialize $v0
+    addi $t1, $0, 1     # $t1 = sign (+1)
 
-    addi $t3, $0, 1 # t3 = 1
-_first_int:
-    lw $t0, -240($0) # checks if any input to keyboard
-    beq $t0, $0, _first_int # if no, loop
+_read_loop:
+    addi $t2, $0, -236  # status address
+_poll:
+    lw $t3, 0($t2)      # t3 = load status
+    beq $t3, $0, _poll  # if $t3 == 0 (no key), loop back
+    addi $t2, $0, -240
+    lw $t5, 0($t2)      # read one ascii char into $t5
 
-    lw $t0, -236($0) # puts first char in t0
-    addi $v0, $0, 0 # v0 = 0
-    addi $t1, $0, 45 # ASCII for -
+    # check newline
+    addi $t3, $0, 10    # newline char    
+    beq $t5, $t3, _end  # if $t3 char is newline, exit loop
 
-    bne $t0, $t1, _main_read_int_loop # start if not negative
-    sw $0, -240($0) # read next int
-    addi $t3, $0, -1 # t3 = -1 if negative
-    j _first_int
+    # check negative
+    addi $t3, $0, 45
+    beq $t5, $t3, _minus
 
-_main_read_int_loop:
-    lw $t0, -236($0) # puts char in t0
-    addi $t1, $0, 58 # above ASCII 9
-    slt $t2, $t0, $t1 # t2=1 if t0<t1, input <58
-    beq $t2, $0, _end_read_int
+    # skip non-digits
+    addi $t3, $0, 48
+    slt $t4, $t5, $t3           # $t4 = 1 if char < '0'
+    bne $t4, $0, _read_loop     # loop if char is non-digit (< '0')
+    addi $t3, $0, 57   
+    slt $t4, $t3, $t5           # $t4 = 1 if char > '9'
+    bne $t4, $0, _read_loop     # loop if char is non-digit (> '9')
 
-    addi $t1, $0, 48 # below ASCII 0
-    slt $t2, $t0, $t1 # t2=1 if t0<t1, input < 48
-    bne $t2, $0, _end_read_int
+    # process digits
+    addi $t5, $t5, -48          # subtract 48 from ascii value ('0' -> '9' == 48 -> 57 ascii)
+    add $t7, $v0, $0            # $t7 = old $v0
+    sll $v0, $v0, 3             # $v0 = old x 8
+    sll $t8, $t7, 1             # $t8 = old x 2
+    add $v0, $v0, $t8           # $v0 = old x 10
+    add $v0, $v0, $t5           # $v0 = old x 10 + digit
+    j _read_loop                # read next char
 
-    addi $t2, $0, 10 #t2=10
-    mult $v0, $t2 # shifts decimals to left
-    mflo $v0
-    addi $t0, $t0, -48 # converts ascii to int
-    add $v0, $v0, $t0 #adds next digit to v0
+    # process negatives
+_minus:
+    beq $v0, $0, _set_negative
+    j _read_loop
 
-    lw $t0, -236($0)    # read & discard the data register
+_set_negative:
+    addi $t1, $0, -1            # $t1 = sign (-1)
+    j _read_loop
 
-_get_int:
-    lw $t0, -240($0) # checks if any input to keyboard
-    beq $t0, $0, _get_int # if no, loop
-    j _main_read_int_loop # start again
+    # end of input
+_end:
+    addi $t3, $0, -1
+    beq $t1, $t3, _negative_result      # if sign == -1 then negate
+    jr $k0
 
-_end_read_int:
-    mult $v0, $t3 # mult result by t3, making it negative if needed
-    mflo $v0 # gets it
-    lw $t0, 0($sp) # get t0 back from mem
-    lw $t1, 4($sp) # save t0 on the stack
-    lw $t2, 8($sp) # save t0 on the stack
-    lw $t3, 12($sp) # save t3 on the stack
-    addi $sp, $sp, 16 # deallocate stack
+_negative_result:
+    sub $v0, $0, $v0            # $v0 = -$v0
     jr $k0
 
 #Heap allocation
