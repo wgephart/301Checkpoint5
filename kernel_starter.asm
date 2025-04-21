@@ -99,11 +99,11 @@ _syscall5:
     addi $t1, $0, 1     # $t1 = sign (+1)
 
 _read_loop:
-    addi $t2, $0, -236  # status address
+    addi $t2, $0, -240  # status address
 _poll:
     lw $t3, 0($t2)      # t3 = load status
     beq $t3, $0, _poll  # if $t3 == 0 (no key), loop back
-    addi $t2, $0, -240
+    addi $t2, $0, -236  # data address
     lw $t5, 0($t2)      # read one ascii char into $t5
 
     # check newline
@@ -129,6 +129,8 @@ _poll:
     sll $t8, $t7, 1             # $t8 = old x 2
     add $v0, $v0, $t8           # $v0 = old x 10
     add $v0, $v0, $t5           # $v0 = old x 10 + digit
+    addi $t2, $zero, -240       # address of status register
+    sw $zero, 0($t2)            # store to status advance to next char
     j _read_loop                # read next char
 
     # process negatives
@@ -142,12 +144,21 @@ _set_negative:
 
     # end of input
 _end:
+    addi $t2, $0, -240
+    sw $0, 0($t2)
+    addi $t2, $0, -236
+    sw $0, 0($t2)
+
     addi $t3, $0, -1
     beq $t1, $t3, _negative_result      # if sign == -1 then negate
     jr $k0
 
 _negative_result:
     sub $v0, $0, $v0            # $v0 = -$v0
+    addi $t2, $0, -240
+    sw $0, 0($t2)
+    addi $t2, $0, -236
+    sw $0, 0($t2)
     jr $k0
 
 #Heap allocation
