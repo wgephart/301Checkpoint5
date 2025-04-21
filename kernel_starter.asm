@@ -140,6 +140,10 @@ _minus:
 
 _set_negative:
     addi $t1, $0, -1            # $t1 = sign (-1)
+    addi $t2, $0, -240
+    sw $0, 0($t2)
+    addi $t2, $0, -236
+    sw $0, 0($t2)
     j _read_loop
 
     # end of input
@@ -190,6 +194,8 @@ _pollingLoop:
     beq $t2, $0, _pollingLoop  # if status is 0 then no character is available - loop again
     # when character is available read it
     lw $v0, 0($t1) # lw from keyboard data register
+    sw $0, 0($t0)
+    sw $0, 0($t1)
     jr $k0
 
 #extra challenge syscalls go here?
