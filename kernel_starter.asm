@@ -3,11 +3,15 @@
 #program will conflict
 
 .data
+# _error_div0:    .asciiz "Divide-by-zero error\n"
+# _error_nullptr: .asciiz "Null pointer exception\n"
 .text
 _syscallStart_:
     beq $v0, $0, _syscall0 #jump to syscall 0
     addi $k1, $0, 1
     beq $v0, $k1, _syscall1 #jump to syscall 1
+    addi $k1, $0, 4             
+    beq $v0, $k1, _syscall4 #jump to syscall 4
     addi $k1, $0, 5
     beq $v0, $k1, _syscall5 #jump to syscall 5
     addi $k1, $0, 9
@@ -171,8 +175,8 @@ _syscall11:
 #read character
 _syscall12:
     # load addresses
-    addi $t0, $0, -236 
-    addi $t1, $0, -240 
+    addi $t0, $0, -240 
+    addi $t1, $0, -236 
     # loop until a character is available
 _pollingLoop:
     lw $t2, 0($t0) # lw from keyboard status register
@@ -182,5 +186,35 @@ _pollingLoop:
     jr $k0
 
 #extra challenge syscalls go here?
+_syscall4:
+    addi $t0, $0, -256       # MMIO output address (-256 = 0xffffff00)
+    add $t1, $a0, $0        # Copy string start address to $t1
+    addi $t1, $t1, 4
+    
+_print_char_loop:
+    lw $t2, 0($t1)           # Load 4-byte character (LSB = ASCII code)
+    beq $t2, $0, _end_print_string  # Exit on null terminator (0x00000000)
+    sw $t2, 0($t0)           # Write to MMIO (uses LSB like syscall1)
+    addi $t1, $t1, 4         # Move to next 4-byte character
+    j _print_char_loop
+
+_end_print_string:
+    jr $k0
+
+
+# _syscall_error_div0:
+#     la $k1, _error_div0       # Load error message
+#     j _print_error_msg
+
+# _syscall_error_nullptr:
+#     la $k1, _error_nullptr
+
+# _print_error_msg:
+#     lb $t0, 0($k1)           # Load character
+#     beq $t0, $0, _syscall10      # Exit on null terminator
+#     addi $t1, $0, -256
+#     sw $t0, 0($t1)           # Print character
+#     addi $k1, $k1, 1         # Advance pointer
+#     j _print_error_msg
 
 _syscallEnd_:
