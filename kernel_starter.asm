@@ -100,7 +100,7 @@ _first_int:
     addi $t3, $0, -1 # t3 = -1 if negative
     j _first_int
 
-main_read_int_loop:
+_main_read_int_loop:
     lw $t0, -236($0) # puts char in t0
     addi $t1, $0, 58 # above ASCII 9
     slt $t2, $t0, $t1 # t2=1 if t0<t1, input <58
