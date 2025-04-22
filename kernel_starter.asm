@@ -20,6 +20,16 @@ _syscallStart_:
     beq $v0, $k1, _syscall12 #jump to syscall 12
     # Add branches to any syscalls required for your stars.
 
+    # dipswitch
+    addi $k1, $0, 13
+    beq $v0, $k1, _syscall13
+
+    addi $k1, $0, 14
+    beq $v0, $k1, _syscall14
+
+    addi $k1, $0, 15
+    beq $v0, $k1, _syscall15
+
     #Error state - this should never happen - treat it like an end program
     j _syscall10
 
@@ -199,5 +209,32 @@ _pollingLoop:
     jr $k0
 
 #extra challenge syscalls go here?
+
+# dipswitch: loops until a switch is flicked in the dipswitch device
+_syscall13:
+    #load dipswitch address
+    addi $t0, $0, -168
+    sw $0, 0($v0)
+
+_dipLoop:
+    lw $v0, 0($t0)
+    beq $v0, $0, _dipLoop
+    jr $k0
+
+# LED bar: takes $a0 as an argument and outputs it to the LED bar device
+_syscall14:
+    addi $t0, $0, -160
+    sw $a0, 0($t0)
+    jr $k0
+
+# Hex display
+_syscall15:
+    addi $v0, $0, 5
+    syscall             # read integer
+
+    addi $t0, $v0, 0    # $t0 = integer
+    addi $t1, $0, -188
+    sw $t0, 0($t1)
+    jr $k0
 
 _syscallEnd_:
