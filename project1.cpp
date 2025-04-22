@@ -105,6 +105,7 @@ int main(int argc, char* argv[]) {
                     else if (asciiz_pos != std::string::npos) {
                         static_inst_str = static_inst_str.substr(asciiz_pos + 8); // +8 to skip .asciiz
                         string stripped_str = strip_quotes(static_inst_str); // strip quotes from string
+                        cout << stripped_str << endl;
                         static_instruction_offset += (stripped_str.length() * 4); // increment offset by number of characters * 4 (4 bytes per character)
                         string ascii_decimal_str = ""; // string to hold ascii decimal values
                         for (char c : stripped_str) {
@@ -150,13 +151,13 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // Debug: Print label mappings
-    for (const auto& pair : instruction_labels) {
-        //cout << "Instruction Label: " << pair.first << " -> Line " << pair.second << endl;
-    }
-    for (const auto& pair : static_labels) {
-        cout << "Static Label: " << pair.first << " -> Address " << pair.second << endl;
-    }
+    // // Debug: Print label mappings
+    // for (const auto& pair : instruction_labels) {
+    //     //cout << "Instruction Label: " << pair.first << " -> Line " << pair.second << endl;
+    // }
+    // for (const auto& pair : static_labels) {
+    //     //cout << "Static Label: " << pair.first << " -> Address " << pair.second << endl;
+    // }
     
 
 
@@ -169,7 +170,7 @@ int main(int argc, char* argv[]) {
         std::vector<std::string> terms = split(inst, WHITESPACE+",()");
         for (int i = 0; i < terms.size(); i++) { //change to index 1 to skip over .word or .asciiz
             if (std::all_of(terms[i].begin(), terms[i].end(), ::isdigit)) { // from std documentation
-                cout << "static memory terms[i] = " << terms[i] << endl;
+                //cout << "static memory terms[i] = " << terms[i] << endl;
                 static_memory_value = stoi(terms[i]);
             }
             else {
@@ -248,7 +249,6 @@ int main(int argc, char* argv[]) {
         if (inst_type == "sll" || inst_type == "srl") {
             int rd = registers[terms[1]];
             int rs = registers[terms[2]];
-            cout << "sll srl terms[3] = " << terms[3] << endl;
             int shamt = std::stoi(terms[3]);
 
             int result = processRTypeShift(instruction, rd, rs, shamt);
@@ -258,7 +258,6 @@ int main(int argc, char* argv[]) {
     
         // *** I type instructions ***
         if (inst_type == "addi") {
-            cout << "addi terms[3] = " << terms[3] << endl;
             int imm = std::stoi(terms[3]);
             // check if immediate is too large
             if (imm > 0xFFFF || imm < -0x8000) {
@@ -274,14 +273,12 @@ int main(int argc, char* argv[]) {
         }
 
         if (inst_type == "lw") {
-            cout << "lw terms[2] = " << terms[2] << endl;
             int imm = std::stoi(terms[2]);
             int result = encode_Itype(35, registers[terms[3]], registers[terms[1]], imm & 0xFFFF);
             write_binary(result, inst_outfile);
         }
 
         if (inst_type == "sw") {
-            cout << "sw terms[2] = " << terms[2] << endl;
             int imm = std::stoi(terms[2]);
             int result = encode_Itype(43, registers[terms[3]], registers[terms[1]], imm & 0xFFFF);
             write_binary(result, inst_outfile);
@@ -302,7 +299,6 @@ int main(int argc, char* argv[]) {
         }
         
         if (inst_type == "ori"){
-            cout << "ori terms[3] = " << terms[3] << endl;
             int imm = std::stoi(terms[3]);
             int result = encode_Itype(13, registers[terms[2]], registers[terms[1]], imm & 0xFFFF);
             write_binary(result, inst_outfile);
@@ -315,7 +311,6 @@ int main(int argc, char* argv[]) {
         }
         
         if (inst_type == "lui"){
-            cout << "lui terms[3] = " << terms[3] << endl;
             int imm = std::stoi(terms[3]);
             int result = encode_Itype(15, registers[terms[2]], registers[terms[1]], imm & 0xFFFF);
             write_binary(result, inst_outfile);
@@ -365,7 +360,6 @@ int main(int argc, char* argv[]) {
         // implementation:
         // addi $t0, $0, 10 –> this will effectively add the same immediate into $t0 also
         if (inst_type == "li") {
-            cout << "li terms[2] = " << terms[2] << endl;
             int imm = std::stoi(terms[2]);
             int result = encode_Itype(8, registers[terms[1]], 0, imm & 0xFFFF);
             write_binary(result, inst_outfile);
