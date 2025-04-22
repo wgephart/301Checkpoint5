@@ -1,111 +1,114 @@
 .data
+prev_result: .word 0
+
 .text
+.globl main
 
-Calcloop:
-    addi $v0, $0, 5 # read int (if first char is _ then this will do nothing)
+main:
+    # Load ASCII constants into saved registers
+    addi $s5, $zero, 48    # '0'
+    addi $s6, $zero, 57    # '9'
+    addi $s7, $zero, 10    # newline
+
+calc_loop:
+    # --- Read operand 1 ---
+    addi $v0, $zero, 12    # read char
     syscall
+    add  $s4, $zero, $v0   # first char in $s4
 
-    addi $s0, $v0, 0 # first term in s0
+    # If '_' use previous result
+    addi $t0, $zero, 95    # '_'
+    beq  $s4, $t0, use_prev1
+    # else parse integer starting with first digit
+    sub  $s4, $s4, $s5     # digit value
+    jal  parse_int        # returns full int in $v0
+    add  $s0, $zero, $v0   # operand1 = v0
+    j    read_op
 
-    addi $v0, $0, 12 # read char
+use_prev1:
+    lw   $s0, 0(prev_result)
+
+read_op:
+    # --- Read operator ---
+    addi $v0, $zero, 12
     syscall
-    addi $s1, $v0, 0 #operand in s1
+    add  $s1, $zero, $v0   # operator
 
-    addi $t0, $0, 95 #_ ASCII
-    beq $s1, $t0, Underscore1
-
-    addi $v0, $0, 5 # read int
+    # --- Read operand 2 ---
+read_second:
+    addi $v0, $zero, 12
     syscall
+    add  $s4, $zero, $v0   # char in $s4
+    addi $t0, $zero, 95
+    beq  $s4, $t0, use_prev2
+    sub  $s4, $s4, $s5     # digit
+    jal  parse_int
+    add  $s2, $zero, $v0   # operand2
+    j    compute
 
-    addi $s2, $v0, 0 # second term in s2
+use_prev2:
+    lw   $s2, 0(prev_result)
 
-    addi $t1, $0, 43
-    beq $t1, $s1, Addition
-    addi $t1, $0, 45
-    beq $t1, $s1, Subtraction
-    addi $t1, $0, 47
-    beq $t1, $s1, Division
-    addi $t1, $0, 42
-    beq $t1, $s1, Multiplication
-    addi $t1, $0, 37
-    beq $t1, $s1, Modulo
+compute:
+    # --- Compute result in $s3 ---
+    addi $t0, $zero, 43    # '+'
+    beq  $s1, $t0, do_add
+    addi $t0, $zero, 45    # '-'
+    beq  $s1, $t0, do_sub
+    addi $t0, $zero, 42    # '*'
+    beq  $s1, $t0, do_mul
+    addi $t0, $zero, 47    # '/'
+    beq  $s1, $t0, do_div
+    j    calc_loop         # invalid
 
-Underscore1:
-    addi $s0, $s7, 0 #puts past result in s0
+do_add:
+    add  $s3, $s0, $s2
+    j    print_result
 
-    addi $v0, $0, 12 # read char
-    syscall
-    addi $s1, $v0, 0 #operand in s1
+do_sub:
+    sub  $s3, $s0, $s2
+    j    print_result
 
-    addi $v0, $0, 5 # read int
-    syscall
-
-    addi $s2, $v0, 0 # second term in s2
-
-    addi $v0, $0, 12 # read char
-    syscall
-
-    addi $t0, $0, 95 #_ ASCII
-    beq $s1, $t0, Underscore1
-
-    addi $t1, $0, 43
-    beq $t1, $s1, Addition
-    addi $t1, $0, 45
-    beq $t1, $s1, Subtraction
-    addi $t1, $0, 47
-    beq $t1, $s1, Division
-    addi $t1, $0, 42
-    beq $t1, $s1, Multiplication
-    addi $t1, $0, 37
-    beq $t1, $s1, Modulo
-
-Underscore2:
-    addi $v0, $0, 12 # read char
-    syscall
-
-    addi $s2, $s7, 0 # put past result in t2
-
-    addi $t1, $0, 43
-    beq $t1, $s1, Addition
-    addi $t1, $0, 45
-    beq $t1, $s1, Subtraction
-    addi $t1, $0, 47
-    beq $t1, $s1, Division
-    addi $t1, $0, 42
-    beq $t1, $s1, Multiplication
-    addi $t1, $0, 37
-    beq $t1, $s1, Modulo
-
-Addition:
-    add $s7, $s0, $s2
-    addi $v0, $0, 1   #print int
-    addi $a0, $s7, 0
-    syscall
-    j Calcloop
-Subtraction:
-    sub $s7, $s0, $s2
-    addi $v0, $0, 1   #print int
-    addi $a0, $s7, 0
-    syscall
-    j Calcloop
-Division:
-    div $s0, $s2
-    mflo $s7
-    addi $v0, $0, 1   #print int
-    addi $a0, $s7, 0
-    syscall
-    j Calcloop
-Multiplication:
+do_mul:
     mult $s0, $s2
-    mflo $s7
-    addi $v0, $0, 1   #print int
-    addi $a0, $s7, 0
+    mflo $s3
+    j    print_result
+
+do_div:
+    div  $s0, $s2
+    mflo $s3
+
+print_result:
+    # print integer
+    add  $a0, $zero, $s3
+    addi $v0, $zero, 1
     syscall
-    j Calcloop
-Modulo:
-    div $s0, $s2
-    mfhi $s7
-    addi $v0, $0, 1   #print int
-    addi $a0, $s7, 0
+    # save for next
+    sw   $s3, 0(prev_result)
+    # newline
+    addi $a0, $zero, 10
+    addi $v0, $zero, 11
     syscall
-    j Calcloop
+    j    calc_loop
+
+# parse_int: accumulator in $s4, uses syscall12 until newline
+parse_int:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+parse_loop:
+    addi $v0, $zero, 12
+    syscall
+    beq  $v0, $s7, parse_done
+    sub  $v0, $v0, $s5
+    # s4 = s4*10 + v0 using shifts
+    add  $t1, $s4, $zero
+    sll  $s4, $s4, 3
+    sll  $t1, $t1, 1
+    add  $s4, $s4, $t1
+    add  $s4, $s4, $v0
+    j    parse_loop
+parse_done:
+    add  $v0, $zero, $s4
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
