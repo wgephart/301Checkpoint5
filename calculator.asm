@@ -11,7 +11,7 @@ main:
     addi $s7, $zero, 10    # newline
 
 calc_loop:
-    # --- Read operand 1 ---
+    # read first operand
     addi $v0, $zero, 12    # read char
     syscall
     add  $s4, $zero, $v0   # first char in $s4
@@ -29,12 +29,12 @@ use_prev1:
     lw   $s0, 0(prev_result)
 
 read_op:
-    # --- Read operator ---
+    # read operator
     addi $v0, $zero, 12
     syscall
     add  $s1, $zero, $v0   # operator
 
-    # --- Read operand 2 ---
+    # read second operand
 read_second:
     addi $v0, $zero, 12
     syscall
@@ -50,7 +50,7 @@ use_prev2:
     lw   $s2, 0(prev_result)
 
 compute:
-    # --- Compute result in $s3 ---
+    # compute result and put in $s3
     addi $t0, $zero, 43    # '+'
     beq  $s1, $t0, do_add
     addi $t0, $zero, 45    # '-'
@@ -91,7 +91,6 @@ print_result:
     syscall
     j    calc_loop
 
-# parse_int: accumulator in $s4, uses syscall12 until newline
 parse_int:
     addi $sp, $sp, -4
     sw   $ra, 0($sp)
@@ -100,7 +99,7 @@ parse_loop:
     syscall
     beq  $v0, $s7, parse_done
     sub  $v0, $v0, $s5
-    # s4 = s4*10 + v0 using shifts
+
     add  $t1, $s4, $zero
     sll  $s4, $s4, 3
     sll  $t1, $t1, 1
