@@ -54,7 +54,7 @@ _convert:
     add $t6, $0, $0     # $t6 = dig count
 
 _get_digit:
-    beq $t0, $0, _store_last_digit  # if quotient is zero, break loop (one more digit)
+    beq $t0, $0, _print_digits  # if quotient is zero, break loop (one more digit)
 
     addi $t7, $0, 10
     div $t0, $t7        # LO = quotient, HI = remainder
@@ -67,13 +67,6 @@ _get_digit:
     addi $t5, $t5, 4 # increment base pointer
     addi $t6, $t6, 1 # increment dig count
     j _get_digit
-
-_store_last_digit:
-    # store final most-significant digit
-    addi $t8, $t0, 48
-    sw $t8, 0($t5)
-    addi $t5, $t5, 4
-    addi $t6, $t6, 1
 
 _print_digits:
     # print char versions of digits from back of allocated 10 digit space
@@ -150,10 +143,6 @@ _minus:
 
 _set_negative:
     addi $t1, $0, -1            # $t1 = sign (-1)
-    addi $t2, $0, -240
-    sw $0, 0($t2)
-    addi $t2, $0, -236
-    sw $0, 0($t2)
     j _read_loop
 
     # end of input
@@ -169,10 +158,6 @@ _end:
 
 _negative_result:
     sub $v0, $0, $v0            # $v0 = -$v0
-    addi $t2, $0, -240
-    sw $0, 0($t2)
-    addi $t2, $0, -236
-    sw $0, 0($t2)
     jr $k0
 
 #Heap allocation
@@ -231,7 +216,7 @@ _syscall14:
 _syscall15:
     addi $v0, $0, 5
     syscall             # read integer
-
+    
     addi $t0, $v0, 0    # $t0 = integer
     addi $t1, $0, -188
     sw $t0, 0($t1)
