@@ -65,7 +65,6 @@ _syscall0:
 
 #Print Integer
 _syscall1:
-
     addi $sp, $sp, -36 # allocate stack space for saving $t registers
     sw $t0, 0($sp)
     sw $t1, 4($sp)
@@ -88,7 +87,7 @@ _convert:
     add $t6, $0, $0     # $t6 = dig count
 
 _get_digit:
-    beq $t0, $0, _store_last_digit  # if quotient is zero, break loop (one more digit)
+    beq $t0, $0, _print_digits  # if quotient is zero, break loop
 
     addi $t7, $0, 10
     div $t0, $t7        # LO = quotient, HI = remainder
@@ -101,13 +100,6 @@ _get_digit:
     addi $t5, $t5, 4 # increment base pointer
     addi $t6, $t6, 1 # increment dig count
     j _get_digit
-
-_store_last_digit:
-    # store final most-significant digit
-    addi $t8, $t0, 48
-    sw $t8, 0($t5)
-    addi $t5, $t5, 4
-    addi $t6, $t6, 1
 
 _print_digits:
     # print char versions of digits from back of allocated 10 digit space
@@ -163,6 +155,17 @@ _print_zero:
 
 #Read Integer
 _syscall5:
+    addi $sp, $sp, -36 # allocate stack space for saving $t registers
+    sw $t0, 0($sp)
+    sw $t1, 4($sp)
+    sw $t2, 8($sp)
+    sw $t3, 12($sp)
+    sw $t4, 16($sp)
+    sw $t5, 20($sp)
+    sw $t6, 24($sp)
+    sw $t7, 28($sp)
+    sw $t8, 32($sp)
+
     add $v0, $0, $0     # initialize $v0
     addi $t1, $0, 1     # $t1 = sign (+1)
 
@@ -219,10 +222,34 @@ _end:
 
     addi $t3, $0, -1
     beq $t1, $t3, _negative_result      # if sign == -1 then negate
+
+    addi $sp, $sp, 36 # restore stack space and load back $t reg
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
+    lw $t2, 8($sp)
+    lw $t3, 12($sp)
+    lw $t4, 16($sp)
+    lw $t5, 20($sp)
+    lw $t6, 24($sp)
+    lw $t7, 28($sp)
+    lw $t8, 32($sp)
+
     jr $k0
 
 _negative_result:
     sub $v0, $0, $v0            # $v0 = -$v0
+
+    addi $sp, $sp, 36 # restore stack space and load back $t reg
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
+    lw $t2, 8($sp)
+    lw $t3, 12($sp)
+    lw $t4, 16($sp)
+    lw $t5, 20($sp)
+    lw $t6, 24($sp)
+    lw $t7, 28($sp)
+    lw $t8, 32($sp)
+    
     jr $k0
 
 #Heap allocation

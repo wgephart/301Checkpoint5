@@ -54,7 +54,7 @@ _convert:
     add $t6, $0, $0     # $t6 = dig count
 
 _get_digit:
-    beq $t0, $0, _print_digits  # if quotient is zero, break loop (one more digit)
+    beq $t0, $0, _print_digits  # if quotient is zero, break loop
 
     addi $t7, $0, 10
     div $t0, $t7        # LO = quotient, HI = remainder
