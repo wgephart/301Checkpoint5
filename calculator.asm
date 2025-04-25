@@ -102,9 +102,45 @@ do_mul:
     mflo $s3
     j    print_result
 
+#do_div (manual divide to handle negatives)
 do_div:
-    div  $s0, $s2
-    mflo $s3
+    # determine sign bit: t3 = (s0 < 0), t4 = (s2 < 0)
+    slt  $t3, $s0, $zero
+    slt  $t4, $s2, $zero
+    beq  $t3, $t4, div_sign_zero
+    addi $t5, $zero, 1      # negative result
+    j    div_sign_done
+div_sign_zero:
+    addi $t5, $zero, 0      # positive result
+div_sign_done:
+    # compute absolute values in t0 (dividend), t1 (divisor)
+    beq  $t3, $zero, div_no_neg1
+    sub  $t0, $zero, $s0
+    j    div_val1_done
+div_no_neg1:
+    add  $t0, $zero, $s0
+div_val1_done:
+    beq  $t4, $zero, div_no_neg2
+    sub  $t1, $zero, $s2
+    j    div_val2_done
+div_no_neg2:
+    add  $t1, $zero, $s2
+div_val2_done:
+    # initialize quotient in t2
+    addi $t2, $zero, 0
+div_loop:
+    slt  $t6, $t0, $t1
+    bne  $t6, $zero, div_loop_end
+    sub  $t0, $t0, $t1
+    addi $t2, $t2, 1
+    j    div_loop
+div_loop_end:
+    # apply sign
+    beq  $t5, $zero, div_positive
+    sub  $t2, $zero, $t2
+div_positive:
+    add  $s3, $zero, $t2
+    j    print_result
 
 print_result:
     add  $a0, $zero, $s3
