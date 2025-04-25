@@ -115,16 +115,16 @@ _done_print:
     # restore stack and return
     addi $sp, $sp, 40
 
-    addi $sp, $sp, 36 # allocate stack space for saving $t registers
-    sw $t0, 0($sp)
-    sw $t1, 4($sp)
-    sw $t2, 8($sp)
-    sw $t3, 12($sp)
-    sw $t4, 16($sp)
-    sw $t5, 20($sp)
-    sw $t6, 24($sp)
-    sw $t7, 28($sp)
-    sw $t8, 32($sp)
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
+    lw $t2, 8($sp)
+    lw $t3, 12($sp)
+    lw $t4, 16($sp)
+    lw $t5, 20($sp)
+    lw $t6, 24($sp)
+    lw $t7, 28($sp)
+    lw $t8, 32($sp)
+    addi $sp, $sp, 36
 
     jr $k0
 
@@ -140,7 +140,6 @@ _print_zero:
     addi $t3, $0, -256
     sw $t2, 0($t3)
 
-    addi $sp, $sp, 36 # restore stack space and load back $t reg
     lw $t0, 0($sp)
     lw $t1, 4($sp)
     lw $t2, 8($sp)
@@ -150,6 +149,7 @@ _print_zero:
     lw $t6, 24($sp)
     lw $t7, 28($sp)
     lw $t8, 32($sp)
+    addi $sp, $sp, 36 # restore stack space
 
     jr $k0
 
@@ -223,7 +223,6 @@ _end:
     addi $t3, $0, -1
     beq $t1, $t3, _negative_result      # if sign == -1 then negate
 
-    addi $sp, $sp, 36 # restore stack space and load back $t reg
     lw $t0, 0($sp)
     lw $t1, 4($sp)
     lw $t2, 8($sp)
@@ -233,13 +232,13 @@ _end:
     lw $t6, 24($sp)
     lw $t7, 28($sp)
     lw $t8, 32($sp)
+    addi $sp, $sp, 36 # restore stack space
 
     jr $k0
 
 _negative_result:
     sub $v0, $0, $v0            # $v0 = -$v0
 
-    addi $sp, $sp, 36 # restore stack space and load back $t reg
     lw $t0, 0($sp)
     lw $t1, 4($sp)
     lw $t2, 8($sp)
@@ -249,7 +248,8 @@ _negative_result:
     lw $t6, 24($sp)
     lw $t7, 28($sp)
     lw $t8, 32($sp)
-    
+    addi $sp, $sp, 36 # restore stack space 
+
     jr $k0
 
 #Heap allocation
