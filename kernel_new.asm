@@ -23,6 +23,10 @@ _syscallStart_:
     # print string
     addi $k1, $0, 4
     beq $v0, $k1, _syscall4
+
+    # read string
+    addi $k1, $0, 8
+    beq $v0, $k1, _syscall8
     
     # dipswitch
     addi $k1, $0, 13
@@ -48,10 +52,6 @@ _syscallStart_:
     addi $k1, $0, 19
     beq $v0, $k1, _syscall19 
 
-    # LED matrix
-    addi $k1, $0, 20
-    beq $v0, $k1, _syscall20
-
     #Error state - this should never happen - treat it like an end program
     j _syscall10
 
@@ -59,8 +59,7 @@ _syscallStart_:
 _syscall0:
     addi $sp, $0, -4096 # initialize stack pointer
     la $k1, _END_OF_STATIC_MEMORY_ # Load end of static memory
-    addi $t0, $0, -4092  # HEAP POINTER 0x3FFFF004
-    sw $k1, 0($t0) # Store initial heap pointer
+    sw $k1, -4092($0) # Store initial heap pointer (0x3FFFF004)
     j _syscallEnd_
 
 #Print Integer
@@ -254,10 +253,15 @@ _negative_result:
 
 #Heap allocation
 _syscall9:
-    addi $t0, $0, -4092 # add heap pointer address into $t0
-    lw $v0, 0($t0) # load heap pointer into $v0
+    addi $sp, $sp, -4
+    sw $t1, 0($sp)
+
+    lw $v0, -4092($0) # load heap pointer into $v0
     add $t1, $v0, $a0 # allocate new space on heap
-    sw $t1, 0($t0) # store updated heap pointer
+    sw $t1, -4092($0) # store updated heap pointer
+
+    lw $t1, 0($sp)
+    addi $sp, $sp, 4
     jr $k0 
 
 #"End" the program
@@ -266,58 +270,162 @@ _syscall10:
 
 #print character
 _syscall11:
-    addi $t0, $0, -256
-    sw $a0, 0($t0)
+    sw $a0, -256($0)
     jr $k0
 
 #read character
 _syscall12:
-    # load addresses
-    addi $t0, $0, -240 
-    addi $t1, $0, -236
+    addi $sp, $sp, -4
+    sw $t0, 0($sp)
     # loop until a character is available
 _pollingLoop:
-    lw $t2, 0($t0) # lw from keyboard status register
-    beq $t2, $0, _pollingLoop  # if status is 0 then no character is available - loop again
+    lw $t0, -240($0) # lw from keyboard status register
+    beq $t0, $0, _pollingLoop  # if status is 0 then no character is available - loop again
     # when character is available read it
-    lw $v0, 0($t1) # lw from keyboard data register
-    sw $0, 0($t0)
-    sw $0, 0($t1)
+    lw $v0, -236($0) # lw from keyboard data register
+    sw $0, -240($0) # clear status
+
+    lw $t0, 0($sp)
+    addi $sp, $sp, 4
     jr $k0
 
 #extra challenge syscalls
 
 # print string: prints a string to the terminal from static memory character by character
-_syscall4:
-    addi $t0, $0, -256       
-    add $t1, $a0, $0        # copy string start address to $t1
-    addi $t1, $t1, 4        # add 4 to skip null string at the beginning
+_syscall4: 
+    addi $sp, $sp, -8
+    sw $t0, 0($sp)
+    sw $t1, 4($sp)
+
+    add $t0, $a0, $0        # copy string start address to $t1
+    addi $t0, $t0, 4        # add 4 to skip null string at the beginning
     
 _print_char_loop:
-    lw $t2, 0($t1)          
-    beq $t2, $0, _end_print_string  # exit if string is 00000000
-    sw $t2, 0($t0)           
-    addi $t1, $t1, 4         # move to next character
+    lw $t1, 0($t0)          
+    beq $t1, $0, _end_print_string  # exit if string is 00000000
+    sw $t1, -256($0)           
+    addi $t0, $t0, 4         # move to next character
     j _print_char_loop
 
 _end_print_string:
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
+    addi $sp, $sp, 8
     jr $k0
 
 
+_syscall8:
+    # allocate space and store temp variables
+    addi $sp, $sp, -40
+    sw $t0, 0($sp)
+    sw $t1, 4($sp)
+    sw $t2, 8($sp)
+    sw $t3, 12($sp)
+    sw $t4, 16($sp)
+    sw $t5, 20($sp)
+    sw $t6, 24($sp)
+    sw $t7, 28($sp)
+    sw $t8, 32($sp)
+    sw $t9, 36($sp)
+
+    # load addresses
+    addi $t0, $0, -240 
+    addi $t1, $0, -236
+
+    # allocate space for 25 characters 
+    addi $sp, $sp, -100
+
+    # $t3 = stack address for string
+    add $t3, $sp, $0 
+    
+    # Initialize character counter
+    add $t5, $0, $0     # $t5 will count characters read
+    add $t6, $t3, $0    # $t6 will keep original stack pointer
+
+    # temp store loop
+    _store_char_loop:
+    lw $t2, 0($t0)      # lw from keyboard status register
+    beq $t2, $0, _store_char_loop  # if status is 0 then no character is available - loop again
+    # when character is available read it
+    lw $t4, 0($t1)      # lw from keyboard data register
+    sw $0, 0($t0)       # Reset keyboard status
+    sw $0, 0($t1)       # Reset keyboard data
+    
+    # Check if character is newline (ASCII 10)
+    addi $t7, $0, 10    # $t7 = newline character
+    beq $t4, $t7, _end_read_string
+    
+    sw $t4, 0($t3)      # store character on the stack
+    # increase offset
+    addi $t3, $t3, 4
+    addi $t5, $t5, 1    # increment character counter
+    j _store_char_loop
+
+    _end_read_string:
+    # Calculate size needed for heap allocation (characters * 4 + 4 for null terminator)
+    addi $t7, $t5, 1    # Add 1 for null terminator
+    sll $t7, $t7, 2     # Multiply by 4 (assuming word storage)
+    
+    # Load heap pointer address
+    addi $k1, $0, -4092
+    lw $t8, 0($k1)      # Get current heap pointer
+    
+    # Store original heap pointer to return in $v0
+    add $v0, $t8, $0
+    
+    # Copy characters from stack to heap
+    add $t3, $t6, $0    # Reset to beginning of stack buffer
+    add $t9, $t8, $0    # $t9 = current position in heap
+    
+    # Copy loop
+    addi $t2, $0, 0     # Initialize counter
+    _copy_loop:
+        beq $t2, $t5, _add_null_terminator  # If we've copied all chars, add null terminator
+        
+        lw $t4, 0($t3)  # Load word from stack
+        sw $t4, 0($t9)  # Store word to heap
+        
+        addi $t3, $t3, 4  # Increment stack pointer
+        addi $t9, $t9, 4  # Increment heap pointer
+        addi $t2, $t2, 1  # Increment counter
+        j _copy_loop
+    
+    _add_null_terminator:
+        sw $0, 0($t9)   # Store null terminator
+        
+        # Update heap pointer (add size to current heap pointer)
+        add $t8, $t8, $t7
+        sw $t8, 0($k1)  # Store updated heap pointer
+    
+    # Deallocate stack space for string
+    addi $sp, $sp, 100
+    
+    # Restore temp variables
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
+    lw $t2, 8($sp)
+    lw $t3, 12($sp)
+    lw $t4, 16($sp)
+    lw $t5, 20($sp)
+    lw $t6, 24($sp)
+    lw $t7, 28($sp)
+    lw $t8, 32($sp)
+    lw $t9, 36($sp)
+    addi $sp, $sp, 40
+    
+    jr $k0
+
 # dipswitch: loops until a switch is flicked in the dipswitch device
 _syscall13:
-    addi $t0, $0, -168      # dipswitch address
-
 # dip loop will loop until a switch is triggered
 _dipLoop:
-    lw $v0, 0($t0)          # load from dipswitch register
+    lw $v0, -168($0)          # load from dipswitch register
     beq $v0, $0, _dipLoop   # if value in dipswitch register is still 0, then no switch has been flipped -- loop again
     jr $k0
 
 # LED bar: takes $a0 as an argument and outputs it to the LED bar device
 _syscall14:
-    addi $t0, $0, -160      # LED bar address   
-    sw $a0, 0($t0)          # store argument in LED bar address
+    sw $a0, -160($0)          # store argument in LED bar address
     jr $k0
 
 # Hex display: reads from keyboard and sends input to the hex display device
@@ -328,10 +436,7 @@ _syscall15:
 
     addi $v0, $0, 5
     syscall             # read integer
-
-    addi $t0, $v0, 0    # $t0 = integer
-    addi $t1, $0, -188  # hex display address
-    sw $t0, 0($t1)    # store keyboard-read hex value to the display
+    sw $v0, -188($0)    # store keyboard-read hex value to the display
 
     # load return address
     lw $k0, 0($sp)
@@ -341,21 +446,25 @@ _syscall15:
 
 # button: loops until the button is pressed 
 _syscall16:
-    addi $t0, $0, -164      # button address
 _buttonLoop:
-    lw $v0, 0($t0)          # load from button register
+    lw $v0, -164($0)          # load from button register
     beq $v0, $0, _buttonLoop    # will loop until the value in $v0 is not 0
     jr $k0
 
 
 # LED: activates button, takes no argument 
 _syscall17:
-    addi $t0, $0, -248  # LED address
-    sw $0, 0($t0)       # turn on device
+    sw $0, -248($0)       # turn on device
     jr $k0
 
 # seven segment display
 _syscall19: 
+    addi $sp, $sp, -16
+    sw $t2, 0($sp)
+    sw $t4, 4($sp)
+    sw $t5, 8($sp)
+    sw $t6, 12($sp)
+
     # store return address on stack before syscall 5
     addi $sp, $sp, -4
     sw $k0, 0($sp)
@@ -441,14 +550,16 @@ _syscall19:
     _end_seven_segment:
         lw $k0, 0($sp)
         addi $sp, $sp, 4
+        lw $t2, 0($sp)
+        lw $t4, 4($sp)
+        lw $t5, 8($sp)
+        lw $t6, 12($sp)
+        addi $sp, $sp, 16
         jr $k0
-
 
 # LED matrix: takes $a0 as an input and displays corresponding LED squares on the 8x4 matrix
 _syscall20:
-    addi $t0, $0, -200      # LED matrix address
-    sw $a0, 0($t0)
+    sw $a0, -200($0)
     jr $k0
-
 
 _syscallEnd_:
