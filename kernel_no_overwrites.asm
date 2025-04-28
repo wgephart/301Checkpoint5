@@ -572,17 +572,8 @@ _syscall20:
 
 # Joystick
 _syscall21:
-    addi $sp, $sp, -8
-    sw $t0, 0($sp)
-    sw $t1, 4($sp)
-
-    lw $t0, -176($0) # x data
-    lw $t1, -172($0) # y data
-    add $v0, $0, $t0 
-    add $v1, $0, $t1
-    
-    lw $t0, 0($sp)
-    lw $t1, 4($sp)
+    lw $v0, -176($0) # x data
+    lw $v1, -172($0) # y data
     jr $k0
 
 _syscallEnd_:
