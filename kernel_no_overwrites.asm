@@ -45,12 +45,20 @@ _syscallStart_:
     beq $v0, $k1, _syscall16
     
     # led
-    addi $k1, 0, 17
+    addi $k1, $0, 17
     beq $v0, $k1, _syscall17
 
     # seven segment display
     addi $k1, $0, 19
     beq $v0, $k1, _syscall19 
+
+    # led matrix
+    addi $k1, $0, 20
+    beq $v0, $k1, _syscall20
+
+    # joystick
+    addi $k1, $0, 21
+    beq $v0, $k1, _syscall21
 
     #Error state - this should never happen - treat it like an end program
     j _syscall10
@@ -560,6 +568,21 @@ _syscall19:
 # LED matrix: takes $a0 as an input and displays corresponding LED squares on the 8x4 matrix
 _syscall20:
     sw $a0, -200($0)
+    jr $k0
+
+# Joystick
+_syscall21:
+    addi $sp, $sp, -8
+    sw $t0, 0($sp)
+    sw $t1, 4($sp)
+
+    lw $t0, -176($0) # x data
+    lw $t1, -172($0) # y data
+    add $v0, $0, $t0 
+    add $v1, $0, $t1
+    
+    lw $t0, 0($sp)
+    lw $t1, 4($sp)
     jr $k0
 
 _syscallEnd_:
