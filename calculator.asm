@@ -20,7 +20,6 @@ main:
     addi $s7, $zero, 10    # newline
 
 calc_loop:
-    # --- Operand1 ---
     addi $v0, $zero, 12    # read char
     syscall
     add  $t0, $zero, $v0
@@ -38,18 +37,16 @@ use_prev1:
     # no get lookahead here—operator will be next input
 after_op1:
 
-    # --- Operator ---
     addi $v0, $zero, 12
     syscall
     add  $s1, $zero, $v0
 
-    # --- Operand2 ---
     addi $v0, $zero, 12    # read first char
     syscall
     add  $t0, $zero, $v0
-    addi $t1, $zero, 95    # '_'
+    addi $t1, $zero, 95    # underscore
     beq  $t0, $t1, use_prev2
-    addi $t1, $zero, 45    # '-'
+    addi $t1, $zero, 45    # dash
     beq  $t0, $t1, neg2
     sub  $s4, $t0, $s5     # digit
     jal  parse_int
@@ -79,13 +76,13 @@ neg2:
     j    compute
 
 compute:
-    addi $t1, $zero, 43    # '+'
+    addi $t1, $zero, 43    # add
     beq  $s1, $t1, do_add
-    addi $t1, $zero, 45    # '-'
+    addi $t1, $zero, 45    # minus
     beq  $s1, $t1, do_sub
-    addi $t1, $zero, 42    # '*'
+    addi $t1, $zero, 42    # multiply
     beq  $s1, $t1, do_mul
-    addi $t1, $zero, 47    # '/'
+    addi $t1, $zero, 47    # divide
     beq  $s1, $t1, do_div
     j    calc_loop
 
